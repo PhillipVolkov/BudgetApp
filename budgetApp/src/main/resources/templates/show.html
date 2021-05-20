@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+    <head>
+    	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <title>Transactions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="static.css" rel="stylesheet"/>
+    </head>
+    
+    <body>
+    	<div class="topnav">
+    		<a class="linkButton" href="/">Overview</a>
+    		<a class="linkButton" href="/summary">Summary</a>
+    		<a class="linkButton" href="/planning">Planning</a>
+    		<a class="linkButton" href="/import">Import</a>
+    		<a class="linkButton" href="/history">History</a>
+    	</div>
+    
+    	<div class="webContainer">
+    		<div class="gridContainer">
+	   			<div class="header">
+		        	<div class="card">   
+		        		<h2>Period Summary</h2>
+		        		
+		        		<div class="break"></div>
+		        		
+		        		<div th:if="${periods != null}">
+			        		<select name="periodSelect" id="periodSelect" th:attr="onchange=|updatePeriod(this.value)|" class="mainSelector">
+			        			<div th:each="period : ${periods}">
+				        			<div th:if="${period.getId() == periodId}">
+		        						<option th:value="${period.getId()}" th:text="${'' + {period.getStart()} + ' to ' + {period.getEnd()}}" selected></option>
+		        					</div>
+		        					<div th:unless="${period.getId() == periodId}">
+		        						<option th:value="${period.getId()}" th:text="${'' + {period.getStart()} + ' to ' + {period.getEnd()}}"></option>
+		        					</div>
+	        					</div>
+			        		</select>
+		        		</div>
+		        	</div>
+		        </div>
+		        
+		        <div class="leftElem" th:if="${transactions != null}">
+		        	<div class="card">
+		        		<h3>Spending Charts</h3>
+		        		
+		        		<div class="break"></div>
+		        		
+		        		<div class="row" style="padding:0;">
+		        			<div class="donutChart">
+					        	<div id="summaryChart" style="width:100%; height:400px; grid-row: 1; grid-column: 1;"></div>
+					        	<div class="donutLabel"><p id="incomeLabel"></p></div>
+				        	</div>
+				        	
+				        	<div id="subtotalsTable" style="width:100%; height:400px; grid-row: 1; grid-column: 2;"></div>
+			        	</div>
+			        </div>
+			        
+			        <div class="card">
+			        	<div id="subtotalsChart" style="width:100%; height:600px; grid-row: 1; grid-column: 1;"></div>
+			        </div>
+			        
+			        <div class="card">
+			        	<div id="cashflowChart" style="width:100%; height:600px; grid-row: 1; grid-column: 1;"></div>
+			        </div>
+		        </div>
+		        
+		        <div class="rightElem" th:if="${transactions != null}"> 
+		        	<div class="card">
+		        		<label> Date:
+			        		<input type="date" id="dateFilter" name="dateFilter" th:value="${dateFilter}" 
+			        		th:min="${periods.get(periodMap.get(periodId)).getStart()}" th:max="${periods.get(periodMap.get(periodId)).getEnd()}" th:attr="onchange=|updateDate(this.value)|">
+		        		</label>
+		        		
+		        		<label style="margin-left:20px;"> Amount:
+			        		<input type="text" id="amountFilter" name="amountFilter" th:value="${amountFilter}" th:attr="onchange=|updateAmount(this.value)|" style="width:60px;">
+		        		</label>
+		        		
+		        		<label style="margin-left:20px;"> Description:
+			        		<input type="text" id="descriptionFilter" name="descriptionFilter" th:value="${descriptionFilter}" th:attr="onchange=|updateDescription(this.value)|" style="width:200px;">
+		        		</label>
+		        	
+		        		<label style="margin-left:20px;"> Category:
+			        		<select name="categoryFilter" id="categoryFilter" th:attr="onchange=|updateCategory(this.value)|">
+	       						<option value="All" selected>All</option>
+	       						
+	       						
+			        			<div th:each="category : ${categories}">
+			        				<div th:if="${category.getName().equals(categoryFilter)}">
+		       							<option th:value="${category.getName()}" th:text="${category.getName()}" selected></option>
+		        					</div>
+			        				<div th:unless="${category.getName().equals(categoryFilter)}">
+		       							<option th:value="${category.getName()}" th:text="${category.getName()}"></option>
+		        					</div>
+		       					</div>
+			        		</select>
+		        		</label>
+		        	</div>
+		        
+		        	<form method="POST" th:action="@{/summary}" enctype="multipart/form-data">
+			        	<div class="card">
+			        		<button type="submit" class="btn btn-primary">Save</button>
+			        
+			        		<div th:if="${merchantShow.equals('false')}">
+				        		<input type="radio" id="description" name="merchantShow" value="false" onchange="updateMerchantShow(this.value)" checked>
+								<label for="description">Description</label><br>
+								<input type="radio" id="merchant" name="merchantShow" value="true" onchange="updateMerchantShow(this.value)">
+								<label for="merchant">Merchant</label><br>
+							</div>
+							<div th:unless="${merchantShow.equals('false')}">
+				        		<input type="radio" id="description" name="merchantShow" value="false" onchange="updateMerchantShow(this.value)">
+								<label for="description">Description</label><br>
+								<input type="radio" id="merchant" name="merchantShow" value="true" onchange="updateMerchantShow(this.value)" checked>
+								<label for="merchant">Merchant</label><br>
+							</div>
+			        
+			        		<div class="break"></div>
+			        		
+					        <table style="font-size: 12px;">
+					            <thead>
+					            	<tr>
+					            		<th style="width:3%;"></th>
+						                <th style="width:10%;">Date</th>
+						                <th style="width:8%;">Amount</th>
+						                <th>Description</th>
+						                <th style="width:13%;">Category</th>
+						            </tr>
+					            </thead>
+					            <tbody>
+						            <tr th:each="transaction : ${transactions}">
+						            	<td><button type="submit" name="remove" th:value="${transaction.getId()}" style="width:90%;background-color:red;color:white;font-size:12px;padding:5px 5px;margin:0px;">X</button></td>
+						            	<td><input type="date" name="date[]" th:value="${transaction.getDate()}" style="width:90%;" readonly></td>
+					            		<td><input type="text" name="amount[]" th:value="${transaction.getAmount()}" style="width:90%" readonly></td>
+						                <div th:if="${transaction.getMerchantId() == null}">
+						            		<td><input type="text" name="description[]" th:value="${transaction.getDescription()}" style="width:97%" readonly></td>
+						            		<input type="hidden" name="merchantName[]" value="null">
+						            		
+						            		<td><select name="categoryName[]">
+						            			<div th:each="category : ${categories}">
+						            				<div th:if="${category.getId() != 14}">
+					        							<option th:value="${category.getId()}" th:text="${category.getName()}"></option>
+					        						</div>
+					        					</div>
+					        					<option th:value="14" th:text="Other" selected></option>
+						            		</select></td>
+						                </div>
+						                <div th:unless="${transaction.getMerchantId() == null}">
+						                	<div th:if="${merchantShow.equals('false')}">
+							            		<td><input type="text" name="description[]" th:value="${transaction.getDescription()}" style="width:97%" readonly></td>
+							                	<input type="hidden" name="merchantName[]" th:value="${merchants.get(merchantMap.get(transaction.getMerchantId())).getName()}" style="width:97%">
+						                	</div>
+						                	<div th:unless="${merchantShow.equals('false')}">
+							            		<input type="hidden" name="description[]" th:value="${transaction.getDescription()}" style="width:97%" readonly>
+							                	<td><input type="text" name="merchantName[]" th:value="${merchants.get(merchantMap.get(transaction.getMerchantId())).getName()}" style="width:97%" readonly></td>
+						                	</div>
+						                	
+						                	<td><select name="categoryName[]">
+						            			<div th:each="category : ${categories}">
+								        			<div th:if="${category.getName() == categories.get(categoryMap.get(merchants.get(merchantMap.get(transaction.getMerchantId())).getCategoryId())).getName()}">
+						        						<option th:value="${category.getId()}" th:text="${category.getName()}" selected></option>
+						        					</div>
+						        					<div th:unless="${category.getName() == categories.get(categoryMap.get(merchants.get(merchantMap.get(transaction.getMerchantId())).getCategoryId())).getName()}">
+						        						<option th:value="${category.getId()}" th:text="${category.getName()}"></option>
+						        					</div>
+					        					</div>
+						            		</select></td>
+						                </div>
+						                
+						                <input type="hidden" name="transactionId[]" th:value="${transaction.getId()}">
+						            </tr>
+					            </tbody>
+					        </table>
+					        <input type="hidden" name="period" id="periodForm" value="0">
+					        <input type="hidden" name="dateFilter" id="dateForm" value="">
+					        <input type="hidden" name="amountFilter" id="amountForm" value="">
+					        <input type="hidden" name="descriptionFilter" id="descriptionForm" value="">
+					        <input type="hidden" name="categoryFilter" id="categoryForm" value="">
+			        	</div>
+			        </form>
+		        </div>
+	    	
+		    	<div th:unless="${transactions != null}">
+	        		<div class="card">
+				     		<h3>No periods are entered</h3>
+				     	</div>
+				     </div>
+	        	</div>
+        </div>
+
+    </body>
+    
+	<script th:inline="javascript">
+		document.getElementById("periodForm").setAttribute('value', document.getElementById("periodSelect").value);
+		document.getElementById("dateForm").setAttribute('value', document.getElementById("dateFilter").value);
+		document.getElementById("amountForm").setAttribute('value', document.getElementById("amountFilter").value);
+		document.getElementById("descriptionForm").setAttribute('value', document.getElementById("descriptionFilter").value);
+		document.getElementById("categoryForm").setAttribute('value', document.getElementById("categoryFilter").value);
+		
+		function variableString(exclude) {
+			var str = '';
+			
+			if (exclude != "period") {
+				str += "&period=" + document.getElementById("periodSelect").value;
+			}
+			if (exclude != "date") {
+				str += "&dateFilter=" + document.getElementById("dateFilter").value;
+			}
+			if (exclude != "amount") {
+				str += "&amountFilter=" + document.getElementById("amountFilter").value;
+			}
+			if (exclude != "description") {
+				str += "&descriptionFilter=" + document.getElementById("descriptionFilter").value;
+			}
+			if (exclude != "category") {
+				str += '&categoryFilter=' + document.getElementById("categoryFilter").value;
+			}
+			if (exclude != "merchant") {
+				str += '&merchantShow=';
+				if (document.getElementById("merchant").checked) {
+					str+="true";
+				}
+				else if (document.getElementById("description").checked) {
+					str+="false";
+				}
+			}
+			
+			return str;
+		}
+		
+		function updatePeriod(val) {
+			location.href = '/summary?period=' + val + '&categoryFilter=' + document.getElementById("categoryFilter").value + "&amountFilter=" + document.getElementById("amountFilter").value
+			+ "&descriptionFilter=" + document.getElementById("descriptionFilter").value;
+		}
+		
+		function updateCategory(val) {
+			location.href = '/summary?categoryFilter=' + val + variableString("category");
+		}
+		
+		function updateDate(val) {
+			location.href = '/summary?dateFilter=' + val + variableString("date");;
+		}
+		
+		function updateAmount(val) {
+			location.href = '/summary?amountFilter=' + val + variableString("amount");
+		}
+		
+		function updateDescription(val) {
+			location.href = '/summary?descriptionFilter=' + val + variableString("description");;
+		}
+		
+		function updateMerchantShow(val) {
+			location.href = '/summary?merchantShow=' + val + variableString("merchant");;
+		}
+		
+		google.charts.load('current', {'packages':['corechart', 'table']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+            var data = new google.visualization.DataTable();
+            
+       		/*[+
+    			var categories = [[${categories}]];
+    			var subtotals = [[${subtotals}]];
+    			var goals = [[${goals}]];
+			+]*/
+			
+			var dataPoints = [];
+       		
+       		differenceAverage = 0;
+       		total = 0;
+       		salary = 0;
+			for (i = 0; i < categories.length; i++) 
+			{
+				if (categories[i]["name"] != "Salary") {
+					var point = [];
+					
+					point.push(categories[i]["name"]);
+					
+					var goalAmount = 0;
+					for (j = 0; j < goals.length; j++) {
+						if (goals[j]["categoryId"] == categories[i]["id"]) {
+							goalAmount = Math.abs(goals[j]["amount"]);
+						}
+					}
+					point.push(goalAmount);
+					
+					var amount = 0;
+					for (j = 0; j < subtotals.length; j++) {
+						
+						if (subtotals[j]["categoryId"] == null && categories[i]["name"] == "Other") {
+							amount = Math.abs(subtotals[j]["amount"]);
+						}
+						else if (subtotals[j]["categoryId"] == categories[i]["id"]) {
+							amount = Math.abs(subtotals[j]["amount"]);
+						}
+					}
+					point.push(amount);
+					point.push(goalAmount-amount);
+					differenceAverage += goalAmount-amount;
+					total += amount;
+					if (goalAmount-amount >= 0) {
+						point.push('green');
+					}
+					else {
+						point.push('red');
+					}
+					
+					if (goalAmount >= amount) {
+						point.push(amount);
+						point.push(goalAmount-amount);
+					}
+					else {
+						point.push(amount);
+						point.push(0);
+					}
+					
+					dataPoints.push(point);
+				}
+				else {
+					var amount = 0;
+					for (j = 0; j < subtotals.length; j++) {
+						if (subtotals[j]["categoryId"] == categories[i]["id"]) {
+							amount = Math.abs(subtotals[j]["amount"]);
+						}
+					}
+					
+					document.getElementById('incomeLabel').textContent = 'Salary: $' + Math.round(amount * 100) / 100;
+					salary = amount;
+				}
+			}
+			document.getElementById('incomeLabel').textContent += " Expense: $" + Math.round(total * 100) / 100;
+			console.log(differenceAverage);
+			
+			differenceAverage /= categories.length-1;
+			
+			for (i = 0; i < dataPoints.length; i++) {
+				dataPoints[i].push(differenceAverage);
+				dataPoints[i].push(salary - total);
+			}
+            
+            data.addColumn('string', 'Category');
+            data.addColumn('number', 'Goal Amount');
+            data.addColumn('number', 'Actual Amount');
+            data.addColumn('number', 'Difference');
+            data.addColumn({role:'style'}, 'Difference Style');
+            data.addColumn('number', 'Amount');
+            data.addColumn('number', 'Goal');
+            data.addColumn('number', 'Difference Average');
+            data.addColumn('number', 'Cash Flow');
+            data.addRows(dataPoints);
+
+            var pieChart = new google.visualization.PieChart(document.getElementById('summaryChart'));
+            var table = new google.visualization.Table(document.getElementById('subtotalsTable'));
+            
+            var formatter = new google.visualization.ColorFormat();
+            formatter.addRange(null, 0, 'white', 'red');
+            formatter.addRange(0, null, 'white', 'green');
+            formatter.format(data, 3);
+            
+            var pieChartView = new google.visualization.DataView(data);
+            pieChartView.setColumns([0,2]);
+            
+            pieChart.draw(pieChartView, {legend:'none', chartArea: {width: '95%', height:'95%'}, pieHole: 0.6});
+            
+            var tableView = new google.visualization.DataView(data);
+            tableView.setColumns([0,1,2,3]);
+            table.draw(tableView, {allowHtml: true, sort: 'disable', width:'100%', height:'100%', cssClassNames:{headerCell: 'cssHeaderCell'}});
+            
+            var barChartView = new google.visualization.DataView(data);
+            barChartView.setColumns([0, 5, {calc: "stringify", sourceColumn: 2, type: "string", role: "annotation" }, 6, {calc: "stringify", sourceColumn: 1, type: "string", role: "annotation" }]);
+            
+            var barChart = new google.visualization.BarChart(document.getElementById("subtotalsChart"));
+            barChart.draw(barChartView, {bar: {groupWidth: "80%"}, legend: { position: "none" }, chartArea: {width: '80%', height:'100%'}, isStacked:'percent', series: {0:{color:'#DC3912'},1:{color:'#3366CC'}}});
+            
+            var barChartView2 = new google.visualization.DataView(data);
+            barChartView2.setColumns([0, 3, 4, 7]);
+            
+            var barChart2 = new google.visualization.ComboChart(document.getElementById("cashflowChart"));
+            barChart2.draw(barChartView2, {seriesType: 'bars', bar: {groupWidth: "80%"}, legend: { position: "none" }, chartArea: {width: '85%', height:'85%'}, series: {1:{type:'line', color:'#968c2d'}}});
+        }
+	 </script>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Transactions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="static.css" rel="stylesheet"/>
+    </head>
+    
+    <body>
+    	<div class="topnav">
+    		<a class="linkButton" href="/">Overview</a>
+    		<a class="linkButton" href="/summary">Summary</a>
+    		<a class="linkButton" href="/planning">Planning</a>
+    		<a class="linkButton" href="/import">Import</a>
+    		<a class="linkButton" href="/history">History</a>
+    	</div>
+    
+    	<div class="webContainer">
+    		<div class="gridContainer">
+	   			<div class="header">
+		        	<div class="card">   
+		        		<h2>View Upload History</h2>
+		        	</div>
+		        </div>
+		        
+			   	<div class="mainElem">
+			   		<div class="card">
+		        		<label style="margin-left:20px;"> Upload Log:
+			        		<select name="dateFilter" id="dateFilter" th:attr="onchange=|updateUpdate(this.value)|">
+			        			<div th:each="update : ${updates}">
+			        				<div th:if="${update.getId().equals(updateId)}">
+		       							<option th:value="${update.getId()}" th:text="${update.getDate() + '|'  + update.getTime()}" selected></option>
+		        					</div>
+			        				<div th:unless="${update.getId().equals(updateId)}">
+		       							<option th:value="${update.getId()}" th:text="${update.getDate() + '|'  + update.getTime()}"></option>
+		        					</div>
+		       					</div>
+			        		</select>
+		        		</label>
+		        		
+		        		<form method="POST" th:action="@{/history}" enctype="multipart/form-data">
+		        			<input type="hidden" name="update" th:value="${updateId}">
+		        		
+			        		<span style="background-color:red;color:white;padding:0px;margin-left:20px;">
+			        		<button type="submit" name="remove" th:value="${updateId}" style="padding:5px 5px;margin:0px;font-size:14px;" onclick="confirmDelete(this)">DELETE THESE TRANSACTIONS</button>
+			        		</span>
+		        		</form>
+		        	</div>
+			   	
+			        <div class="card">
+			        	<h3>Transactions</h3>
+		        
+		        		<div class="break"></div>
+			        
+				        <table>
+				            <thead>
+				            	<tr>
+					                <th>Date</th>
+					                <th>Description</th>
+					                <th>Amount</th>
+					                <th>Update Id</th>
+					            </tr>
+				            </thead>
+				            
+				            <tbody>
+					            <tr th:each="transaction : ${transactions}">
+					                <td th:text="${transaction.getDate()}"></td>
+					                <td th:text="${transaction.getDescription()}"></td>
+					                <td th:text="${transaction.getAmount()}"></td>
+					                <td th:text="${transaction.getUpdateId()}"></td>
+					            </tr>
+				            </tbody>
+				        </table>
+				    </div>
+		        </div>
+	    	</div>
+        </div>
+
+    </body>
+    
+    <script th:inline="javascript">
+		function updateUpdate(val) {
+			location.href = '/history?update=' + val;
+		}
+		
+		function confirmDelete(button) {
+	       if (!confirm('Are you sure you want to delete these transcations?')) {
+	           button.value = "-1";
+	       }
+	    }
+	</script>
+</html>

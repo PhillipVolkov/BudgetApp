@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Transactions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="static.css" rel="stylesheet"/>
+    </head>
+    
+    <body>
+    	<div class="topnav">
+    		<a class="linkButton" href="/">Overview</a>
+    		<a class="linkButton" href="/summary">Summary</a>
+    		<a class="linkButton" href="/planning">Planning</a>
+    		<a class="linkButton" href="/import">Import</a>
+    		<a class="linkButton" href="/history">History</a>
+    	</div>
+    
+    	<div class="webContainer">
+    		<div class="gridContainer">
+	   			<div class="header">
+		        	<div class="card">   
+		        		<h2>Import new Transactions</h2>
+		        	</div>
+		        </div>
+		        
+		        <div class="leftElem">
+			        	<div class="card">
+				        	<form method="POST" th:action="@{/import}" enctype="multipart/form-data">
+				       			<input type="file" name="file" class="form-control-file" id="file" accept=".csv">
+				       			<input type="hidden" name="preview" value="true">
+				       			<button type="submit" class="btn btn-primary">Preview</button>
+				    		</form>
+				    		
+				    		<form method="POST" th:action="@{/import}" enctype="multipart/form-data">
+				       			<input type="hidden" name="preview" value="false">
+				       			<button type="submit" class="btn btn-primary">Confirm & Sort</button>
+				    		</form>
+				        </div>
+			   	</div>
+			   
+			   	<div class="mainElem2">
+			       	<div th:unless="${transactions == null or displayTable == false}">
+			       
+				        <div class="card">
+				        	<h3>Imported Transactions</h3>
+			        
+			        		<div class="break"></div>
+				        
+					        <table>
+					            <thead>
+					            	<tr>
+						                <th>Date</th>
+						                <th>Description</th>
+						                <th>Debit</th>
+						                <th>Credit</th>
+						            </tr>
+					            </thead>
+					            
+					            <tbody>
+						            <tr th:each="transaction : ${transactions}">
+						                <td th:text="${transaction.getDate()}"></td>
+						                <td th:text="${transaction.getDescription()}"></td>
+						                <td th:text="${transaction.getDebit()}"></td>
+						                <td th:text="${transaction.getCredit()}"></td>
+						            </tr>
+					            </tbody>
+					        </table>
+				        </div>
+				    </div>
+		        </div>
+		        
+				<div class="rightElem">
+			       	<div th:unless="${message == null}">
+			        	<div class="card">
+				        	<h3 th:text="${message}">Error Code Appears Here</h3>
+				        </div>
+				   </div>
+		        </div>
+	    	</div>
+        </div>
+
+    </body>
+</html>

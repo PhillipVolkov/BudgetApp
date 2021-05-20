@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+
+    <head>
+    	<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <title>Transactions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="static.css" rel="stylesheet"/>
+    </head>
+    
+    <body>
+    	<div class="topnav">
+    		<a class="linkButton" href="/">Overview</a>
+    		<a class="linkButton" href="/summary">Summary</a>
+    		<a class="linkButton" href="/planning">Planning</a>
+    		<a class="linkButton" href="/import">Import</a>
+    		<a class="linkButton" href="/history">History</a>
+    	</div>
+    
+    	<div class="webContainer">
+    		<div class="gridContainer">
+	   			<div class="header">
+		        	<div class="card">   
+		        		<h2>Overview of Periods</h2>
+		        	</div>
+		        </div>
+		        
+		        <div class="mainElem"> 
+			        <div class="card">
+			        	<div id="cashFlowChart" style="width:100%; height:400px;"></div>
+			        </div>
+		        
+		        	<div class="card">
+				        <table style="font-size: 16px;">
+				            <thead>
+				            	<tr>
+				            		<th style="width:5%;">Category</th>
+				            		
+				            		<div th:each="period : ${periods}">
+					               		<th> <a th:href='${"/summary?period=" + period.getId()}' th:text="${period.getStart()}" style="color:white;text-decoration: none;"></a> </th>
+					                </div>
+					            </tr>
+				            </thead>
+				            
+				            <tbody>
+				            	<div th:each="category, index : ${categories}">
+				            		<tr>
+				            		
+				            		<td th:text="${category.getName()}"></td>
+				            	
+					            	<div th:each="period, index2 : ${periods}">
+					            		<td style="background-color:green; color:white;" th:text="${allSubtotals.get(index.index).get(index2.index)}" th:if="${allSubtotals.get(index.index).get(index2.index) >= allGoals.get(index.index).get(index2.index)}"></td>
+					            		<td style="background-color:red; color:white;" th:text="${allSubtotals.get(index.index).get(index2.index)}" th:unless="${allSubtotals.get(index.index).get(index2.index) >= allGoals.get(index.index).get(index2.index)}"></td>
+					            	</div>
+					            	
+					            	</tr>
+			            		</div>
+			            		
+			            		<tr style="font-size:16px;">
+			            			<td><b>Balance</b></td>
+			            			
+			            			<div th:each="period, index2 : ${periods}">
+					            		<td style="background-color:green; color:white;" th:text="${difference.get(index2.index)}" th:if="${difference.get(index2.index) >= 0}"></td>
+					            		<td style="background-color:red; color:white;" th:text="${difference.get(index2.index)}" th:unless="${difference.get(index2.index) >= 0}"></td>
+					            	</div>
+				            	</tr>
+				            </tbody>
+				        </table>
+		        	</div>
+		        </div>
+		     </div>
+        </div>
+
+    </body>
+    
+    <script th:inline="javascript">
+		google.charts.load('current', {'packages':['corechart', 'table']});
+        google.charts.setOnLoadCallback(drawChart);
+
+        function drawChart() {
+            var data = new google.visualization.DataTable();
+            
+       		/*[+
+    			var difference = [[${difference}]];
+    			var periods = [[${periods}]];
+			+]*/
+			
+			var dataPoints = [];
+       		for (i = 0; i < periods.length; i++) {
+       			var point = [];
+       			point.push(periods[i]["start"], difference[i]);
+       			
+       			if (difference[i] >= 0) {
+					point.push('green');
+				}
+				else {
+					point.push('red');
+				}
+       			
+       			dataPoints.push(point);
+       		}
+            
+            data.addColumn('string', 'Period');
+            data.addColumn('number', 'Cash Flow');
+            data.addColumn({role:'style'}, 'Difference Style');
+            data.addRows(dataPoints);
+            
+            var columnChartView = new google.visualization.DataView(data);
+            columnChartView.setColumns([0,1,2]);
+            var columnChart = new google.visualization.ColumnChart(document.getElementById("cashFlowChart"));
+            columnChart.draw(columnChartView, {seriesType: 'bars', bar: {groupWidth: "80%"}, legend: { position: "none" }, chartArea: {width: '90%', height:'85%'}, series: {0:{type:'bar'}}});
+        }
+	 </script>
+</html>

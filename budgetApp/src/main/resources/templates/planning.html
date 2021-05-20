@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Transactions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="static.css" rel="stylesheet"/>
+    </head>
+    
+    <body>
+    	<div class="topnav">
+    		<a class="linkButton" href="/">Overview</a>
+    		<a class="linkButton" href="/summary">Summary</a>
+    		<a class="linkButton" href="/planning">Planning</a>
+    		<a class="linkButton" href="/import">Import</a>
+    		<a class="linkButton" href="/history">History</a>
+    	</div>
+    
+    	<div class="webContainer">
+    		<div class="gridContainer">
+	   			<div class="header">
+		        	<div class="card">   
+		        		<h2>Planning Page</h2>
+		        		<div class="break"></div>
+		        		
+		        		<select name="typeSelect" id="typeSelect" th:attr="onchange=|updatetype(this.value)|" class="mainSelector">
+		        			<div th:if="${type != null}">
+	        					<div th:if="${type.equals('insert')}">
+	        						<option value="insert" selected>Insert New Goals</option>
+	        						<option value="update">Update Existing Goal</option>
+	        						<option value="delete">Delete a Period</option>
+	        						<option value="categories">Edit Categories</option>
+	        					</div>
+	        					<div th:if="${type.equals('update')}">
+	        						<option value="insert">Insert New Goals</option>
+	        						<option value="update" selected>Update Existing Goal</option>
+	        						<option value="delete">Delete a Period</option>
+	        						<option value="categories">Edit Categories</option>
+	        					</div>
+	        					<div th:if="${type.equals('delete')}">
+	        						<option value="insert">Insert New Goals</option>
+	        						<option value="update">Update Existing Goal</option>
+	        						<option value="delete" selected>Delete a Period</option>
+	        						<option value="categories">Edit Categories</option>
+	        					</div>
+	        					<div th:if="${type.equals('categories')}">
+	        						<option value="insert">Insert New Goals</option>
+	        						<option value="update">Update Existing Goal</option>
+	        						<option value="delete">Delete a Period</option>
+	        						<option value="categories" selected>Edit Categories</option>
+	        					</div>
+	        				</div>
+		        		</select>
+		        	</div>
+		        </div>
+		        
+		        <div th:if="${type != null}" class="mainElem">
+			        <div th:if="${type.equals('insert') and type != null}">
+				        <form method="POST" th:action="@{/planning}" enctype="multipart/form-data">
+					        <div class="card">
+					        	<label>Period Start:
+					        		<div th:if="${periods != null}">
+							        	<input type="date" id="start" name="start" th:with="sdf = ${new java.text.SimpleDateFormat('yyyy-MM-dd')}, util=${T(org.apache.commons.lang3.time.DateUtils)}" 
+							        	th:value="${#dates.format(util.addDays(sdf.parse(periods.get(0).getEnd()), 1), 'yyyy-MM-dd')}" readOnly="true">
+							        </div>
+					        		<div th:unless="${periods != null}">
+					        			<input type="date" id="start" name="start">
+					        		</div>
+					        	</label>
+					        	
+					        	<br>
+					        	
+					        	<label style="margin-left:20px;">Period End:
+					        		<div th:if="${periods != null}">
+							        	<input type="date" id="end" name="end" th:with="sdf = ${new java.text.SimpleDateFormat('yyyy-MM-dd')}, util=${T(org.apache.commons.lang3.time.DateUtils)}" 
+						        		th:value="${#dates.format(util.addDays(sdf.parse(periods.get(0).getEnd()), 1), 'yyyy-MM-dd')}" th:min="${#dates.format(util.addDays(sdf.parse(periods.get(0).getEnd()), 1), 'yyyy-MM-dd')}">
+					        		</div>
+					        		<div th:unless="${periods != null}">
+					        			<input type="date" id="end" name="end">
+					        		</div>
+					        	</label>
+					        
+					        	<div class="break"></div>
+					        	<br>
+				        
+				        		<div class="break"></div>
+					        
+						        <table>
+						            <thead>
+							            <tr>
+							                <th>Category</th>
+							                <th>Amount</th>
+							            </tr>
+						            </thead>
+						            
+						            <tbody>
+							            <tr th:each="category, index : ${categories}">
+						                	<td th:text="${category.getName()}"></td>
+						                	
+						                	<td th:if="${sampleGoals != null and sampleGoals.size()-1 >= index.index}"><input type="text" name="amount[]" id="amount[]" th:value="${sampleGoals.get(index.index).getAmount()}"></td>
+						                	<td th:unless="${sampleGoals != null and sampleGoals.size()-1 >= index.index}"><input type="text" name="amount[]" id="amount[]"></td>
+						                	
+						                	
+						                	<input type="hidden" name="category[]" th:value="${category.getId()}">
+						                	
+						                	<div th:if="${goalMap.containsKey(category.getId()) and goalMap.size() != 0}">
+						                		<input type="hidden" name="goalId[]" th:value="${goals.get(goalMap.get(category.getId())).getId()}">
+						                	</div>
+						                	<div th:unless="${goalMap.containsKey(category.getId()) and goalMap.size() != 0}">
+						                		<input type="hidden" name="goalId[]" th:value="0">
+						                	</div>
+							            </tr>
+							        </tbody>
+						        </table>
+					        </div>
+					        
+					        <input type="hidden" name="new" value="true">
+				       	 	<input type="hidden" name="type" id="typeForm" value="insert">
+					        
+					        <div class="card">
+					        	<button type="submit" class="btn btn-primary">Add new Goals</button>
+					        </div>
+				        </form>
+			        </div>
+				        
+				       
+		    		<div class="mainElem" th:if="${type.equals('update')}">
+				        <form method="POST" th:action="@{/planning}" enctype="multipart/form-data">
+						        <div class="card">
+						        	<select name="periodSelect" id="periodSelect" th:attr="onchange=|updatePeriod(this.value)|">
+					        			<div th:each="period : ${periods}">
+						        			<div th:if="${period.getId() == periodId}">
+				        						<option th:value="${period.getId()}" th:text="${'' + {period.getStart()} + ' to ' + {period.getEnd()}}" selected></option>
+				        					</div>
+				        					<div th:unless="${period.getId() == periodId}">
+				        						<option th:value="${period.getId()}" th:text="${'' + {period.getStart()} + ' to ' + {period.getEnd()}}"></option>
+				        					</div>
+			        					</div>
+					        		</select>
+					        
+					        		<div class="break"></div>
+					        		
+					        		<br>
+						        
+							        <table>
+							            <thead>
+								            <tr>
+								                <th>Category</th>
+								                <th>Amount</th>
+								            </tr>
+							            </thead>
+							            
+							            <tbody>
+								            <tr th:each="category : ${categories}">
+							                	<td th:text="${category.getName()}"></td>
+							                	
+							                	<div th:if="${goalMap.containsKey(category.getId()) and goalMap.size() != 0}">
+							                		<td><input type="text" name="amount[]" id="amount[]" th:value="${goals.get(goalMap.get(category.getId())).getAmount()}"></td>
+							                		<input type="hidden" name="goalId[]" th:value="${goals.get(goalMap.get(category.getId())).getId()}">
+							                	</div>
+							                	<div th:unless="${goalMap.containsKey(category.getId()) and goalMap.size() != 0}">
+							                		<td><input type="text" name="amount[]" id="amount[]" value=""></td>
+							                		<input type="hidden" name="goalId[]" value="0">
+							                	</div>
+							                	
+							                	<input type="hidden" name="category[]" th:value="${category.getId()}">
+								            </tr>
+								        </tbody>
+							        </table>
+						        </div>
+						        
+						        <input type="hidden" name="start" value="">
+						        <input type="hidden" name="end" value="">
+						        <input type="hidden" name="new" value="false">
+					       	 	<input type="hidden" name="period" id="periodForm" value="0">
+					       	 	<input type="hidden" name="type" id="typeForm" value="update">
+						        
+						        <div class="card">
+						        	<button type="submit" class="btn btn-primary">Update Goals</button>
+						        </div>
+					    </form>
+				   	</div>
+				   	
+				   	<div class="mainElem" th:if="${type.equals('delete')}">
+				        <form method="POST" th:action="@{/planning}" enctype="multipart/form-data">
+					        <div class="card">
+					        	<select name="periodSelect" id="periodSelect" th:attr="onchange=|updatePeriod(this.value)|">
+				        			<div th:each="period : ${periods}">
+					        			<div th:if="${period.getId() == periodId}">
+			        						<option th:value="${period.getId()}" th:text="${'' + {period.getStart()} + ' to ' + {period.getEnd()}}" selected></option>
+			        					</div>
+			        					<div th:unless="${period.getId() == periodId}">
+			        						<option th:value="${period.getId()}" th:text="${'' + {period.getStart()} + ' to ' + {period.getEnd()}}"></option>
+			        					</div>
+		        					</div>
+				        		</select>
+					        
+					        	
+						        <input type="hidden" name="amount[]" value="">
+						        <input type="hidden" name="goalId[]" value="">
+						        <input type="hidden" name="category[]" value="">
+						        <input type="hidden" name="start" value="">
+						        <input type="hidden" name="end" value="">
+						        <input type="hidden" name="new" value="false">
+					       	 	<input type="hidden" name="period" id="periodForm" value="0">
+					       	 	<input type="hidden" name="type" id="typeForm" value="delete">
+						        
+					        </div>
+					        
+					        <div class="card">
+					        	<button type="submit" class="btn btn-primary">Delete Period, Goals, and Subtotals</button>
+					        </div>
+					    </form>
+				   	</div>
+				   	
+				   	<div class="mainElem" th:if="${type.equals('categories')}">
+				        <form method="POST" th:action="@{/planning}" enctype="multipart/form-data">
+					   		<div class="card">
+					   			<button type="submit" class="btn btn-primary" onclick="updateCategoryInputs()">Save</button>
+					   			<div class="break"></div>
+					   		
+					   			<table style="user-select: none;">
+						            <thead>
+							            <tr>
+							            	<th style="width:1%;"></th>
+							                <th style="width:10%;">Category</th>
+							                <th>API Result</th>
+							            </tr>
+						            </thead>
+						            
+						            <tbody id="categoryTableBody" style="border-collapse: separate; border-spacing:5px;">
+							        </tbody>
+						        </table>
+						        
+						        <input type="hidden" name="amount[]" value="">
+						        <input type="hidden" name="goalId[]" value="">
+						        <input type="hidden" name="category[]" value="">
+						        <input type="hidden" name="start" value="">
+						        <input type="hidden" name="end" value="">
+						        <input type="hidden" name="new" value="false">
+					       	 	<input type="hidden" name="period" id="periodForm" value="0">
+					       	 	<input type="hidden" name="type" id="typeForm" value="categories">
+					   		</div>
+					   	</form>
+				   	</div>
+				 </div>
+	    	</div>
+        </div>
+        
+		<script th:inline="javascript">
+			try {
+				document.getElementById("periodForm").setAttribute('value', document.getElementById("periodSelect").value);
+			}
+			catch {}
+		
+			function updatePeriod(val) {
+				location.href = '/planning?period=' + val + "&type=" + document.getElementById("typeSelect").value;
+			}
+			
+			function updatetype(val) {
+				location.href = '/planning?type=' + val;
+			}
+			
+			function updateCategoryInputs() {
+				tableBody = document.getElementById("categoryTableBody");
+				
+				for (i = 0; i < tableBody.children.length-1; i++) {
+					row = tableBody.children[i];
+					
+					apiMapContains = []
+					
+					for (j = 0; j < row.children[2].children.length; j++) {
+						for (k = 0; k < row.children[2].children[j].children.length; k++) {
+							apiMapContains.push(row.children[2].children[j].children[k].getAttribute('value'));
+						}
+					}
+					
+					inputValue = document.createElement("input");
+					inputValue.setAttribute("type", "hidden");
+					inputValue.setAttribute("name", "apiMaps[]");
+					inputValue.setAttribute("value", apiMapContains);
+					row.appendChild(inputValue);
+					
+					inputValue = document.createElement("input");
+					inputValue.setAttribute("type", "hidden");
+					inputValue.setAttribute("name", "categoryNames[]");
+					inputValue.setAttribute("value", row.children[1].children[0].value);
+					row.appendChild(inputValue);
+				}
+			}
+			
+			function addNewRow() {
+				tableBody = document.getElementById("categoryTableBody");
+				document.getElementById("buttonRow").remove();
+				
+				row = document.createElement("tr");
+				
+				deleteCell = document.createElement("td");
+				deleteButton = document.createElement("button");
+				deleteButton.appendChild(document.createTextNode("X"));
+				deleteButton.setAttribute("type", "submit");
+				deleteButton.setAttribute("style", "width:90%;background-color:red;color:white;font-size:12px;padding:5px 5px;margin:0px;");
+				deleteButton.setAttribute("onclick", "deleteRow(this)");
+				deleteCell.appendChild(deleteButton);
+				row.appendChild(deleteCell);
+				
+				categoryCell = document.createElement("td");
+				categoryInput = document.createElement("input");
+				categoryInput.setAttribute("type", "text");
+				categoryInput.setAttribute("style", "font-size:18px;");
+				categoryInput.setAttribute("name", "categories[]");
+				categoryCell.appendChild(categoryInput);
+				row.appendChild(categoryCell);
+				
+				mappingCell = document.createElement("td");
+				mappingCell.setAttribute("class", "dropZone");
+				rowInner = document.createElement("tr");
+				mappingCell.appendChild(rowInner);
+				row.appendChild(mappingCell);
+				tableBody.appendChild(row);
+				
+				row = document.createElement("tr");
+				row.setAttribute("id", "buttonRow");
+				row.appendChild(document.createElement("td"));
+				categoryCell = document.createElement("td");
+				categoryButton = document.createElement("button");
+				categoryButton.appendChild(document.createTextNode("+"));
+				categoryButton.setAttribute("style", "width:90%;background-color:red;color:white;font-size:24px;padding:5px 5px;margin:0px;");
+				categoryButton.setAttribute("onclick", "addNewRow()");
+				categoryCell.appendChild(categoryButton);
+				row.appendChild(categoryCell);
+				tableBody.appendChild(row);
+			}
+			
+			function deleteRow(button) {
+				if (parseInt(button.parentNode.parentNode.children[1].children[0].children[0].value) > 14) {
+					c = confirm("Are you sure that you wish to delete this category?");
+
+					if (c) {
+						categories = document.getElementById("categoryTableBody").children;
+						otherRow = 14;
+						
+						for (i = 0; i < categories.length-1; i++) {
+							if (categories[i].children[1].children[0].children[0].value == "14") {
+								otherRow = i;
+								break;
+							}
+						}
+						
+						for (rowNum = 0; rowNum < button.parentNode.parentNode.children[2].children.length; rowNum++) {
+							apiMaps = button.parentNode.parentNode.children[2].children[rowNum].children;
+							
+							console.log(apiMaps);
+							
+							while (apiMaps.length != 0) {
+								moveApiMap(categories[otherRow].children[2], apiMaps[0]);
+								apiMaps = button.parentNode.parentNode.children[2].children[rowNum].children;
+							}
+						}
+					
+						updateCategoryInputs();
+					}
+					else {
+						button.setAttribute("name", "");
+					}
+				}
+				else {
+					button.setAttribute("name", "");
+				}
+			}
+			
+			rowCount = 12;
+			function formatTable() {
+				/*[+
+	    			var categories = [[${categories}]];
+	    			var apiMapping = [[${apiMappings}]];
+				+]*/
+				tableBody = document.getElementById("categoryTableBody");
+				
+				for (i = 0; i < categories.length; i++) {
+					row = document.createElement("tr");
+					
+					deleteCell = document.createElement("td");
+					deleteButton = document.createElement("button");
+					deleteButton.appendChild(document.createTextNode("X"));
+					deleteButton.setAttribute("type", "submit");
+					deleteButton.setAttribute("style", "width:90%;background-color:red;color:white;font-size:12px;padding:5px 5px;margin:0px;");
+					deleteButton.setAttribute("value", categories[i]["id"]);
+					deleteButton.setAttribute("name", "removeCategory");
+					deleteButton.setAttribute("onclick", "deleteRow(this)");
+					deleteCell.appendChild(deleteButton);
+					row.appendChild(deleteCell);
+					
+					categoryCell = document.createElement("td");
+					categoryInput = document.createElement("input");
+					categoryInput.setAttribute("type", "text");
+					categoryInput.setAttribute("value", categories[i]["name"]);
+					categoryInput.setAttribute("style", "font-size:18px;");
+					categoryInput.setAttribute("name", "categories[]");
+					
+					categoryID = document.createElement("input");
+					categoryID.setAttribute("type", "hidden");
+					categoryID.setAttribute("value", categories[i]["id"]);
+					categoryID.setAttribute("name", "categoriesID[]");
+					categoryInput.appendChild(categoryID);
+					
+					categoryCell.appendChild(categoryInput);
+					row.appendChild(categoryCell);
+					
+					mappingCell = document.createElement("td");
+					mappingCell.setAttribute("class", "dropZone");
+					rowInner = document.createElement("tr");
+					
+					count = 0;
+					for (j = 0; j < apiMapping.length; j++) {
+						if (apiMapping[j]["categoryId"] == categories[i]["id"]) {
+							cell = document.createElement("td");
+							cell.setAttribute("class", "dropZoneCell");
+							cell.setAttribute("draggable", "true");
+							cell.setAttribute("style", "border-radius:10px;");
+							cell.appendChild(document.createTextNode(apiMapping[j]["name"]));
+							cell.setAttribute("value", apiMapping[j]["id"]);
+							
+							rowInner.appendChild(cell);
+							count++;
+						}
+						
+						if (count >= rowCount) {
+							mappingCell.appendChild(rowInner);
+							rowInner = document.createElement("tr");
+							count = 0;
+						}
+					}
+					
+					mappingCell.appendChild(rowInner);
+					row.appendChild(mappingCell);
+					
+					tableBody.appendChild(row);
+				}
+				row = document.createElement("tr");
+				row.setAttribute("id", "buttonRow");
+				row.appendChild(document.createElement("td"));
+				categoryCell = document.createElement("td");
+				categoryButton = document.createElement("button");
+				categoryButton.appendChild(document.createTextNode("+"));
+				categoryButton.setAttribute("style", "width:90%;background-color:red;color:white;font-size:24px;padding:5px 5px;margin:0px;");
+				categoryButton.setAttribute("onclick", "addNewRow()");
+				categoryCell.appendChild(categoryButton);
+				row.appendChild(categoryCell);
+				tableBody.appendChild(row);
+			}
+			formatTable();
+			
+			var dragged;
+			document.addEventListener("dragstart", function(event) {
+				dragged = event.target;
+			}, false);
+
+			document.addEventListener("dragover", function(event) {
+				event.preventDefault();
+			}, false);
+
+			document.addEventListener("dragenter", function(event) {
+				if (event.target.className == "dropZone") {
+		    		//event.target.style.background = "purple";
+				}
+				else if (event.target.className == "dropZoneCell") {
+		    		//event.target.parentNode.parentNode.style.background = "purple";
+				}
+				
+			}, false);
+
+			document.addEventListener("dragleave", function(event) {
+				if (event.target.className == "dropZone") {
+			    	event.target.style.background = "";
+				}
+				else if (event.target.className == "dropZoneCell") {
+		    		event.target.parentNode.parentNode.style.background = "";
+				}
+			}, false);
+
+			document.addEventListener("drop", function(event) {
+				event.preventDefault();
+				
+				if (event.target != dragged) {
+					if (event.target.className == "dropZone") {
+						moveApiMap(event.target, dragged);
+					}
+				  	else if (event.target.className == "dropZoneCell") {
+				  		moveApiMap(event.target.parentNode.parentNode, dragged);
+					}
+				}
+			}, false);
+			
+			function moveApiMap(dropZone, elem) {
+				dropZone.style.background = "";
+				elem.parentNode.removeChild(elem);
+				
+				lastRow = dropZone.children.length-1;
+				for (i = 0; i < dropZone.children.length; i++) {
+					if (dropZone.children[i].children.length < rowCount) {
+						lastRow = i;
+						break;
+					}
+				}
+				numCols = dropZone.children[lastRow].children.length;
+				
+				if (numCols >= rowCount) {
+					rowInner = document.createElement("tr");
+					rowInner.appendChild(elem);
+					dropZone.appendChild(rowInner);
+				}
+				else {
+					dropZone.children[lastRow].appendChild(elem);
+				}
+			}
+		</script>
+    </body>
+</html>
