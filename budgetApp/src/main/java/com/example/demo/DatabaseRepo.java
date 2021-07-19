@@ -101,6 +101,30 @@ public class DatabaseRepo {
 		.executeUpdate();
     }
     
+    @Transactional
+    public void findDuplicates() {
+    	entityManager.createNativeQuery("delete from duplicates;\r\n"
+    			+ "insert into duplicates(transaction1_id, transaction2_id) (\r\n"
+    			+ "	select t1.transaction_id, t2.transaction_id from transactions t1, transactions t2 where (t1.transaction_date = t2.transaction_date and \r\n"
+    			+ "	t1.transaction_amount = t2.transaction_amount and t1.transaction_description = t2.transaction_description and t1.transaction_id <> t2.transaction_id \r\n"
+    			+ "	and t2.transaction_id > t1.transaction_id)\r\n"
+    			+ ");")
+		.executeUpdate();
+    }
+    
+    @Transactional
+    public void removeDuplicate(Long tran2) {
+    	entityManager.createNativeQuery("delete from duplicates where transaction2_id = ?1")
+		.setParameter(1, tran2)
+		.executeUpdate();
+    }
+    
+    @Transactional
+    public void removeTransactionsFromDuplicates() {
+    	entityManager.createNativeQuery("delete from transactions t using duplicates d where d.transaction2_id = t.transaction_id")
+		.executeUpdate();
+    }
+    
     //update goal amount on POSTGRES based on ID
     @Transactional
     public void updateGoal(String amount, Long id) {
@@ -248,7 +272,7 @@ public class DatabaseRepo {
     //delete transactions from POSTGRES
     @Transactional
     public void deleteTransactionsByUpdate(Long updateId) {
-    	entityManager.createNativeQuery("delete from transactions where update_id = ?1")
+    	entityManager.createNativeQuery("delete from duplicates; delete from transactions where update_id = ?1")
     	.setParameter(1, updateId)
 		.executeUpdate();
     }
@@ -264,7 +288,7 @@ public class DatabaseRepo {
     //delete transaction from POSTGRES
     @Transactional
     public void deleteTransaction(Long id) {
-    	entityManager.createNativeQuery("delete from transactions where transaction_id = ?1")
+    	entityManager.createNativeQuery("delete from duplicates; delete from transactions where transaction_id = ?1")
     	.setParameter(1, id)
 		.executeUpdate();
     }
@@ -303,6 +327,13 @@ public class DatabaseRepo {
     	return entityManager.createQuery("select t from Transaction t where t.update_id = ?1 order by transaction_date desc", Transaction.class)
     		.setParameter(1, update)
     		.getResultList();
+    }
+    
+    //read transactions, filtered by update from hibernate entities
+    Transaction getTransactionById(Long id) {
+    	return entityManager.createQuery("select t from Transaction t where t.transaction_id = ?1", Transaction.class)
+    		.setParameter(1, id)
+    		.getSingleResult();
     }
     
     //read subtotal from hibernate entities
@@ -358,8 +389,8 @@ public class DatabaseRepo {
     	}
     	else {
     		return entityManager.createQuery("select g from Goal g where category_id is null and period_id = ?1", Goal.class)
-    	    		.setParameter(1, period)
-    	    		.getSingleResult();
+	    		.setParameter(1, period)
+	    		.getSingleResult();
     	}
     }
     
@@ -413,8 +444,20 @@ public class DatabaseRepo {
     
   //read updates from hibernate entities
     List<Update> getUpdates() {
-    	return entityManager.createQuery("select up from Update up order by update_id", Update.class)
+    	return entityManager.createQuery("select up from Update up order by update_id desc", Update.class)
         		.getResultList();
+    }
+    
+  //read duplicates from hibernate entities
+    List<Duplicate> getDuplicates() {
+    	return entityManager.createQuery("select dup from Duplicate dup order by transaction1_id desc", Duplicate.class)
+        		.getResultList();
+    }
+    
+    Period getPeriodByDate(String date) {
+    	return entityManager.createQuery("select p from Period p where TO_DATE(?1, 'YYYY-MM-DD') between p.period_start and p.period_end", Period.class)
+    			.setParameter(1, date)
+    			.getSingleResult();
     }
     
     //read transactions from hibernate entities, filtered by either period, date, amount, description, or category, or any combination

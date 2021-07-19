@@ -8,19 +8,21 @@
 
 #E12B38
 
-
 */
 
 body {
 	background-color:#f0f0f0f0;
 	font-family: sans-serif;
 	margin: 0px;
+	padding: 0px;
 }
 
 .topnav {
 	display: flex;
   	background-color: #333;
   	overflow: hidden;
+  	padding: 0px;
+  	margin: 0px;
 }
 
 .topnav a:hover {

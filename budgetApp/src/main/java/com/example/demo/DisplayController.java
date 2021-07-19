@@ -112,7 +112,8 @@ public class DisplayController {
     //get mapping for the overview page, sends all table contents within the model, with MAPs as dictionaries to tie IDs to list indexes
 	@GetMapping("/summary")
     public String findTransaction(@RequestParam(name = "period", required = false) String period, @RequestParam(name = "categoryFilter", required = false) String categoryFilter, @RequestParam(name = "dateFilter", required = false) String dateFilter, 
-    		@RequestParam(name = "amountFilter", required = false) String amountFilter, @RequestParam(name = "descriptionFilter", required = false) String descriptionFilter, @RequestParam(name="merchantShow", required = false) String merchantShow, Model model) {
+    		@RequestParam(name = "amountFilter", required = false) String amountFilter, @RequestParam(name = "descriptionFilter", required = false) String descriptionFilter, @RequestParam(name="merchantShow", required = false) String merchantShow, 
+    		@RequestParam(name="focus1", required = false) String focus1, @RequestParam(name="focus2", required = false) String focus2, Model model) {
         List<Period> periods = dataBaseRepo.getPeriods();
         
         Long periodId = null;
@@ -188,7 +189,9 @@ public class DisplayController {
 	        for (int i = 0; i < periods.size(); i++) {
 	        	periodMap.put(periods.get(i).getId(), i);
 	        }
-	        
+
+	        model.addAttribute("focus1", focus1);
+	        model.addAttribute("focus2", focus2);
 	        model.addAttribute("transactions", transactions);
 	        model.addAttribute("merchants", merchants);
 	        model.addAttribute("merchantMap", merchantMap);
@@ -382,38 +385,84 @@ public class DisplayController {
         return "import";
     }
     
+    //change to manage page, display potential duplicates
     //get mapping for import page, displays a message based on whether there are any cached transactions
-  	@GetMapping("/history")
-	public String historyPage(@RequestParam(name = "update", required = false) String update, Model model) {
-		List<Update> updates = dataBaseRepo.getUpdates();
+  	@GetMapping("/manage")
+	public String managePage(@RequestParam(name = "update", required = false) String update, @RequestParam(name = "type", required = false) String type, @RequestParam(name = "refresh", required = false) String refresh, Model model) {
+		if (type == null) type = "upload";
 		
-  		Long updateId = null;
-    	if (updates.size() != 0) updateId = updates.get(0).getId();
-		
-		if (update != null) {
-			updateId = Long.parseLong(update);
+		if (type.equals("upload")) {
+			List<Update> updates = dataBaseRepo.getUpdates();
+			
+	  		Long updateId = null;
+	    	if (updates.size() != 0) updateId = updates.get(0).getId();
+			
+			if (update != null) updateId = Long.parseLong(update);
+			List<Transaction> transactions = dataBaseRepo.getTransactionsByUpdate(updateId);
+			
+
+			model.addAttribute("transactions", transactions);
+			model.addAttribute("updates", updates);
+			model.addAttribute("updateId", updateId);
 		}
-  		
-		List<Transaction> transactions = dataBaseRepo.getTransactionsByUpdate(updateId);
+		else if (type.equals("duplicate")) {
+			if (refresh != null) dataBaseRepo.findDuplicates();
+			
+			List<Duplicate> duplicates = dataBaseRepo.getDuplicates();
+			
+			ArrayList<Transaction[]> outputDupe = new ArrayList<Transaction[]>();
+			
+			for (Duplicate dupe : duplicates) {
+				outputDupe.add(new Transaction[] {dataBaseRepo.getTransactionById(dupe.getFirstId()), dataBaseRepo.getTransactionById(dupe.getSecondId())});
+			}
+			
+			model.addAttribute("duplicates", outputDupe);
+		}
 		
-		model.addAttribute("transactions", transactions);
-		model.addAttribute("updates", updates);
-		model.addAttribute("updateId", updateId);
-  		return "history";
+		model.addAttribute("type", type);
+  		return "manage";
 	}
   	
   	//get mapping for import page, displays a message based on whether there are any cached transactions
-  	@PostMapping("/history")
-	public RedirectView historyPagePost(@RequestParam(name = "remove") String update, @RequestParam(name = "update") String currUpdate, Model model) {
-  		if (!update.equals("-1")) {
-			Long updateId = Long.parseLong(update);
-			
-			dataBaseRepo.deleteTransactionsByUpdate(updateId);
-			dataBaseRepo.deleteUpdateById(updateId);
-			return new RedirectView("/history");
+  	@PostMapping("/manage")
+	public RedirectView historyPagePost(@RequestParam(name = "remove", required=false) String update, @RequestParam(name = "update", required=false) String currUpdate, 
+			@RequestParam(name = "goto", required=false) String gotoTran, @RequestParam(name = "ignore", required=false) String ignore, 
+			@RequestParam(name = "removeDupes", required=false) String removeDupes, Model model) {
+  		if (update != null && currUpdate != null) {
+	  		if (!update.equals("-1")) {
+				Long updateId = Long.parseLong(update);
+				
+				dataBaseRepo.deleteTransactionsByUpdate(updateId);
+				dataBaseRepo.deleteUpdateById(updateId);
+				return new RedirectView("/manage");
+	  		}
+	  		else {
+	  			return new RedirectView("/manage?update="+currUpdate);
+	  		}
+  		}
+  		else if (gotoTran != null) {
+  			Scanner seperator = new Scanner(gotoTran).useDelimiter(",");
+  			Long gotoTran1 = seperator.nextLong();
+  			Long gotoTran2 = seperator.nextLong();
+  			
+			return new RedirectView("/summary?period=" + dataBaseRepo.getPeriodByDate(dataBaseRepo.getTransactionById(gotoTran1).getDate()).getId()
+					+ "&focus1=" + gotoTran1 + "&focus2=" + gotoTran2);
+  		}
+  		else if (ignore != null) {
+  			Scanner seperator = new Scanner(ignore).useDelimiter(",");
+  			Long tran1 = seperator.nextLong();
+  			Long tran2 = seperator.nextLong();
+  			
+  			dataBaseRepo.removeDuplicate(tran2);
+  			return new RedirectView("/manage?type=duplicate");
+  		}
+  		else if (removeDupes != null) {
+  			dataBaseRepo.removeTransactionsFromDuplicates();
+  			
+  			return new RedirectView("/manage?type=duplicate");
   		}
   		else {
-  			return new RedirectView("/history?update="+currUpdate);
+			return new RedirectView("/manage");
   		}
 	}
     

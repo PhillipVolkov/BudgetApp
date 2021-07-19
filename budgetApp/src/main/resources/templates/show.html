@@ -16,7 +16,7 @@
     		<a class="linkButton" href="/summary">Summary</a>
     		<a class="linkButton" href="/planning">Planning</a>
     		<a class="linkButton" href="/import">Import</a>
-    		<a class="linkButton" href="/history">History</a>
+    		<a class="linkButton" href="/manage">Manage</a>
     	</div>
     
     	<div class="webContainer">
@@ -121,16 +121,16 @@
 					        <table style="font-size: 12px;">
 					            <thead>
 					            	<tr>
-					            		<th style="width:3%;"></th>
-						                <th style="width:10%;">Date</th>
-						                <th style="width:8%;">Amount</th>
+					            		<!--<th style="width:3%;"></th>-->
+						                <th style="width:5%;">Date</th>
+						                <th style="width:10%;">Amount</th>
 						                <th>Description</th>
-						                <th style="width:13%;">Category</th>
+						                <th style="width:15%;">Category</th>
 						            </tr>
 					            </thead>
 					            <tbody>
-						            <tr th:each="transaction : ${transactions}">
-						            	<td><button type="submit" name="remove" th:value="${transaction.getId()}" style="width:90%;background-color:red;color:white;font-size:12px;padding:5px 5px;margin:0px;">X</button></td>
+						            <tr th:each="transaction : ${transactions}" th:id="'row' + ${transaction.getId()}">
+						            	<!--<td><button type="submit" name="remove" th:value="${transaction.getId()}" style="width:90%;background-color:red;color:white;font-size:12px;padding:5px 5px;margin:0px;">X</button></td>-->
 						            	<td><input type="date" name="date[]" th:value="${transaction.getDate()}" style="width:90%;" readonly></td>
 					            		<td><input type="text" name="amount[]" th:value="${transaction.getAmount()}" style="width:90%" readonly></td>
 						                <div th:if="${transaction.getMerchantId() == null}">
@@ -197,6 +197,19 @@
 		document.getElementById("amountForm").setAttribute('value', document.getElementById("amountFilter").value);
 		document.getElementById("descriptionForm").setAttribute('value', document.getElementById("descriptionFilter").value);
 		document.getElementById("categoryForm").setAttribute('value', document.getElementById("categoryFilter").value);
+		
+		/*[+
+			var focusRow1 = [[${focus1}]];
+			var focusRow2 = [[${focus2}]];
+		+]*/
+		
+		if (focusRow1 != null) {
+			document.getElementById("row" + focusRow1).setAttribute('style', 'background-color:yellow');
+			document.getElementById("row" + focusRow1).scrollIntoView(false);
+		}
+		if (focusRow2 != null) {
+			document.getElementById("row" + focusRow2).setAttribute('style', 'background-color:yellow');
+		}
 		
 		function variableString(exclude) {
 			var str = '';

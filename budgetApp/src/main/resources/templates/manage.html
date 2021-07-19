@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Transactions</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="static.css" rel="stylesheet"/>
+    </head>
+    
+    <body>
+    	<div class="topnav">
+    		<a class="linkButton" href="/">Overview</a>
+    		<a class="linkButton" href="/summary">Summary</a>
+    		<a class="linkButton" href="/planning">Planning</a>
+    		<a class="linkButton" href="/import">Import</a>
+    		<a class="linkButton" href="/manage">Manage</a>
+    	</div>
+    
+    	<div class="webContainer">
+    		<div class="gridContainer">
+	   			<div class="header">
+		        	<div class="card">   
+		        		<h2>Manage Transactions</h2>
+		        		
+		        		<div class="break"></div>
+		        		
+		        		<select name="typeSelect" id="typeSelect" th:attr="onchange=|updatetype(this.value)|" class="mainSelector">
+		        			<div th:if="${type != null}">
+	        					<div th:if="${type.equals('upload')}">
+	        						<option value="upload" selected>View Upload Log</option>
+	        						<option value="duplicate">View Potential Duplicates</option>
+	        					</div>
+	        					<div th:if="${type.equals('duplicate')}">
+	        						<option value="upload">View Upload Log</option>
+	        						<option value="duplicate" selected>View Potential Duplicates</option>
+	        					</div>
+	        				</div>
+		        		</select>
+		        		
+    					<a th:if="${type == 'duplicate'}" style="margin-left:10px; text-decoration:none; background-color:#E12B38; color:white; font-size:24px;" href="/manage?type=duplicate&refresh=true">🗘</a>
+    					
+    					<form method="POST" th:action="@{/manage}" enctype="multipart/form-data" th:if="${type == 'duplicate'}">
+			        		<span style="background-color:red;color:white;padding:0px;margin-left:10px;">
+			        		<button type="submit" name="removeDupes" th:value="${updateId}" style="padding:5px 5px;margin:0px;font-size:14px;" onclick="confirmDelete(this)">DELETE ALL</button>
+			        		</span>
+		        		</form>
+		        	</div>
+		        </div>
+		        
+			   	<div class="mainElem">
+			   		<div class="card" th:if="${type == 'upload'}">
+		        		<label style="margin-left:20px;"> Upload Log:
+			        		<select name="dateFilter" id="dateFilter" th:attr="onchange=|updateUpdate(this.value)|">
+			        			<div th:each="update : ${updates}">
+			        				<div th:if="${update.getId().equals(updateId)}">
+		       							<option th:value="${update.getId()}" th:text="${update.getDate() + '|'  + update.getTime()}" selected></option>
+		        					</div>
+			        				<div th:unless="${update.getId().equals(updateId)}">
+		       							<option th:value="${update.getId()}" th:text="${update.getDate() + '|'  + update.getTime()}"></option>
+		        					</div>
+		       					</div>
+			        		</select>
+		        		</label>
+		        		
+		        		<form method="POST" th:action="@{/manage}" enctype="multipart/form-data">
+		        			<input type="hidden" name="update" th:value="${updateId}">
+		        		
+			        		<span style="background-color:red;color:white;padding:0px;margin-left:20px;">
+			        		<button type="submit" name="remove" th:value="${updateId}" style="padding:5px 5px;margin:0px;font-size:14px;" onclick="confirmDelete(this)">DELETE THESE TRANSACTIONS</button>
+			        		</span>
+		        		</form>
+		        	</div>
+			   	
+			        <div class="card" th:if="${type == 'upload'}">
+			        	<h3>Transactions</h3>
+		        
+		        		<div class="break"></div>
+			        
+				        <table>
+				            <thead>
+				            	<tr>
+					                <th>Date</th>
+					                <th>Description</th>
+					                <th>Amount</th>
+					                <th>Update Id</th>
+					            </tr>
+				            </thead>
+				            
+				            <tbody>
+					            <tr th:each="transaction : ${transactions}">
+					                <td th:text="${transaction.getDate()}"></td>
+					                <td th:text="${transaction.getDescription()}"></td>
+					                <td th:text="${transaction.getAmount()}"></td>
+					                <td th:text="${transaction.getUpdateId()}"></td>
+					            </tr>
+				            </tbody>
+				        </table>
+				    </div>
+				    
+				    <form method="POST" th:action="@{/manage}" enctype="multipart/form-data">
+				        <div class="card" th:if="${type == 'duplicate'}">
+					        <table>
+					            <thead>
+					            	<tr>
+						                <th>GoTo</th>
+						                <th>Transaction 1</th>
+						                <th>Transaction 2</th>
+						                <th>Ignore</th>
+						            </tr>
+					            </thead>
+					            
+					            <tbody>
+						            <tr th:each="tran : ${duplicates}">
+						            	<td><button type="submit" name="goto" th:value="${tran[0].getId() + ',' + tran[1].getId()}" style="width:90%;background-color:yellow;color:black;font-size:12px;padding:5px 5px;margin:0px;">View</button></td>
+						            	<td th:text="${tran[0].getDate()} + ' | ' + ${tran[0].getAmount()} + ' | ' + ${tran[0].getDescription()}"></td>
+						            	<td th:text="${tran[1].getDate()} + ' | ' + ${tran[1].getAmount()} + ' | ' + ${tran[1].getDescription()}"></td>
+						            	<td><button type="submit" name="ignore" th:value="${tran[0].getId() + ',' + tran[1].getId()}" style="width:90%;background-color:green;color:white;font-size:12px;padding:5px 5px;margin:0px;">✓</button></td>
+						            </tr>
+					            </tbody>
+					        </table>
+					    </div>
+					 </form>
+		        </div>
+	    	</div>
+        </div>
+
+    </body>
+    
+    <script th:inline="javascript">
+		function updateUpdate(val) {
+			location.href = '/manage?update=' + val;
+		}
+		
+		function updatetype(val) {
+			location.href = '/manage?type=' + val;
+		}
+		
+		function confirmDelete(button) {
+	       if (!confirm('Are you sure you want to delete these transcations?')) {
+	           button.value = "-1";
+	       }
+	    }
+	</script>
+</html>
