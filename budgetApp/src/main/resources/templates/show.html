@@ -39,6 +39,15 @@
 	        					</div>
 			        		</select>
 		        		</div>
+		        		
+			        	<form method="POST" th:action="@{/summary}" enctype="multipart/form-data">
+			        		<button type="submit" name="refresh" value="true" style="margin-left:10px; text-decoration:none; background-color:#3778C2; color:white; font-size:24px; padding:2px;">🗘</button>
+			        		<input type="hidden" name="period" id="periodForm" value="0">
+					        <input type="hidden" name="dateFilter" id="dateForm" value="">
+					        <input type="hidden" name="amountFilter" id="amountForm" value="">
+					        <input type="hidden" name="descriptionFilter" id="descriptionForm" value="">
+					        <input type="hidden" name="categoryFilter" id="categoryForm" value="">
+			        	</form>
 		        	</div>
 		        </div>
 		        

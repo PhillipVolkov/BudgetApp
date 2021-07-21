@@ -103,7 +103,7 @@ public class DatabaseRepo {
     
     @Transactional
     public void findDuplicates() {
-    	entityManager.createNativeQuery("delete from duplicates;\r\n"
+    	entityManager.createNativeQuery("truncate duplicates restart identity cascade;\r\n"
     			+ "insert into duplicates(transaction1_id, transaction2_id) (\r\n"
     			+ "	select t1.transaction_id, t2.transaction_id from transactions t1, transactions t2 where (t1.transaction_date = t2.transaction_date and \r\n"
     			+ "	t1.transaction_amount = t2.transaction_amount and t1.transaction_description = t2.transaction_description and t1.transaction_id <> t2.transaction_id \r\n"

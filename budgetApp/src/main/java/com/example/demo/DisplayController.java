@@ -220,7 +220,7 @@ public class DisplayController {
 			@RequestParam(name = "amount[]", required = false) String[] amounts, @RequestParam(name = "description[]", required = false) String[] descriptions, @RequestParam(name = "merchantName[]", required = false) String[] merchants, 
 			@RequestParam(name = "categoryName[]", required = false) String[] categories, @RequestParam(name = "period", required = false) String period, @RequestParam(name = "categoryFilter", required = false) String categoryFilter, 
 			@RequestParam(name = "dateFilter", required = false) String dateFilter, @RequestParam(name = "amountFilter", required = false) String amountFilter, @RequestParam(name = "descriptionFilter", required = false) String descriptionFilter,
-			@RequestParam(name = "remove", required = false) String remove) {
+			@RequestParam(name = "remove", required = false) String remove, @RequestParam(name = "refresh", required = false) String refresh) {
 		Long periodId = null;
 		
 		if (period != null) {
@@ -240,7 +240,7 @@ public class DisplayController {
         for (int i = 0; i < categoriesDB.size(); i++) {
         	categoryMap.put(categoriesDB.get(i).getId(), i);
         }
-        
+    	
         if (remove == null) {
 			if (ids != null) {
 				//check if there is a change has been made, and if so, execute it
@@ -288,6 +288,9 @@ public class DisplayController {
 					
 				}
 			}
+			else if (refresh != null) {
+	        	dataBaseRepo.calculateSubtotals();
+	        }
         }
         else {
         	dataBaseRepo.deleteTransaction(Long.parseLong(remove));
@@ -458,6 +461,7 @@ public class DisplayController {
   		}
   		else if (removeDupes != null) {
   			dataBaseRepo.removeTransactionsFromDuplicates();
+  			dataBaseRepo.calculateSubtotals();
   			
   			return new RedirectView("/manage?type=duplicate");
   		}

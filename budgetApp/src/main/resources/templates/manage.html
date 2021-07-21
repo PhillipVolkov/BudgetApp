@@ -49,8 +49,8 @@
 		        </div>
 		        
 			   	<div class="mainElem">
-			   		<div class="card" th:if="${type == 'upload'}">
-		        		<label style="margin-left:20px;"> Upload Log:
+			        <div class="card" th:if="${type == 'upload'}">
+			        	<h3 style="margin-left:20px;"> Upload Log:
 			        		<select name="dateFilter" id="dateFilter" th:attr="onchange=|updateUpdate(this.value)|">
 			        			<div th:each="update : ${updates}">
 			        				<div th:if="${update.getId().equals(updateId)}">
@@ -61,19 +61,15 @@
 		        					</div>
 		       					</div>
 			        		</select>
-		        		</label>
+		        		</h3>
 		        		
 		        		<form method="POST" th:action="@{/manage}" enctype="multipart/form-data">
 		        			<input type="hidden" name="update" th:value="${updateId}">
 		        		
 			        		<span style="background-color:red;color:white;padding:0px;margin-left:20px;">
-			        		<button type="submit" name="remove" th:value="${updateId}" style="padding:5px 5px;margin:0px;font-size:14px;" onclick="confirmDelete(this)">DELETE THESE TRANSACTIONS</button>
+			        		<button type="submit" name="remove" th:value="${updateId}" style="padding:5px 5px;margin:0px;font-size:14px;" onclick="confirmDelete(this)">REMOVE TRANSACTIONS</button>
 			        		</span>
 		        		</form>
-		        	</div>
-			   	
-			        <div class="card" th:if="${type == 'upload'}">
-			        	<h3>Transactions</h3>
 		        
 		        		<div class="break"></div>
 			        
