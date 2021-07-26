@@ -42,13 +42,8 @@ public class DisplayController {
         ArrayList<List<Double>> allGoals = new ArrayList<List<Double>>();
         ArrayList<Double> difference = new ArrayList<Double>();
         
-        if (periods.size() > 12) {
-        	try {
-	        	while (periods.get(12) != null) {
-	        		periods.remove(12);
-	        	}
-        	}
-        	catch (Exception e) {}
+        while (periods.size() > 12) {
+	        periods.remove(0);
         }
         
         
