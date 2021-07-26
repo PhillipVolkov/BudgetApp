@@ -42,7 +42,7 @@
 		        		
 			        	<form method="POST" th:action="@{/summary}" enctype="multipart/form-data">
 			        		<button type="submit" name="refresh" value="true" style="margin-left:10px; text-decoration:none; background-color:#3778C2; color:white; font-size:24px; padding:2px;">🗘</button>
-			        		<input type="hidden" name="period" id="periodForm" value="0">
+			        		<input type="hidden" name="period" id="periodForm" value="">
 					        <input type="hidden" name="dateFilter" id="dateForm" value="">
 					        <input type="hidden" name="amountFilter" id="amountForm" value="">
 					        <input type="hidden" name="descriptionFilter" id="descriptionForm" value="">
@@ -181,11 +181,11 @@
 						            </tr>
 					            </tbody>
 					        </table>
-					        <input type="hidden" name="period" id="periodForm" value="0">
-					        <input type="hidden" name="dateFilter" id="dateForm" value="">
-					        <input type="hidden" name="amountFilter" id="amountForm" value="">
-					        <input type="hidden" name="descriptionFilter" id="descriptionForm" value="">
-					        <input type="hidden" name="categoryFilter" id="categoryForm" value="">
+					        <input type="hidden" name="period" id="periodForm2" value="">
+					        <input type="hidden" name="dateFilter" id="dateForm2" value="">
+					        <input type="hidden" name="amountFilter" id="amountForm2" value="">
+					        <input type="hidden" name="descriptionFilter" id="descriptionForm2" value="">
+					        <input type="hidden" name="categoryFilter" id="categoryForm2" value="">
 			        	</div>
 			        </form>
 		        </div>
@@ -206,6 +206,12 @@
 		document.getElementById("amountForm").setAttribute('value', document.getElementById("amountFilter").value);
 		document.getElementById("descriptionForm").setAttribute('value', document.getElementById("descriptionFilter").value);
 		document.getElementById("categoryForm").setAttribute('value', document.getElementById("categoryFilter").value);
+		
+		document.getElementById("periodForm2").setAttribute('value', document.getElementById("periodSelect").value);
+		document.getElementById("dateForm2").setAttribute('value', document.getElementById("dateFilter").value);
+		document.getElementById("amountForm2").setAttribute('value', document.getElementById("amountFilter").value);
+		document.getElementById("descriptionForm2").setAttribute('value', document.getElementById("descriptionFilter").value);
+		document.getElementById("categoryForm2").setAttribute('value', document.getElementById("categoryFilter").value);
 		
 		/*[+
 			var focusRow1 = [[${focus1}]];
